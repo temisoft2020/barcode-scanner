@@ -1,11 +1,45 @@
 const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
 const barcodeList = document.getElementById('barcodeList');
+const ctx = canvas.getContext('2d');
 
 // 스캔된 바코드를 저장할 Set
 const scannedBarcodes = new Set();
 
 // ZXing 바코드 리더 초기화
 const codeReader = new ZXing.BrowserMultiFormatReader();
+
+// 캔버스 크기 설정
+function updateCanvasSize() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+}
+
+// 바코드 영역 표시
+function drawBarcodeBox(location) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#00FF00';
+    ctx.lineWidth = 3;
+
+    // 바코드 위치 좌표
+    const points = location.resultPoints;
+    
+    // 바운딩 박스 계산
+    const minX = Math.min(...points.map(p => p.x));
+    const minY = Math.min(...points.map(p => p.y));
+    const maxX = Math.max(...points.map(p => p.x));
+    const maxY = Math.max(...points.map(p => p.y));
+    
+    // 박스 그리기
+    ctx.beginPath();
+    ctx.rect(minX, minY, maxX - minX, maxY - minY);
+    ctx.stroke();
+
+    // 3초 후 박스 지우기
+    setTimeout(() => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }, 3000);
+}
 
 // 카메라 시작
 async function startCamera() {
@@ -15,6 +49,10 @@ async function startCamera() {
         };
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
+        
+        // 비디오 메타데이터 로드 시 캔버스 크기 설정
+        video.addEventListener('loadedmetadata', updateCanvasSize);
+        
         startScanning();
     } catch (err) {
         console.error('카메라 접근 오류:', err);
@@ -36,6 +74,11 @@ function startScanning() {
                 li.className = 'barcode-item';
                 li.textContent = `${result.text}`;
                 barcodeList.insertBefore(li, barcodeList.firstChild);
+
+                // 바코드 영역 표시
+                if (result.resultPoints) {
+                    drawBarcodeBox(result);
+                }
             }
         } catch (err) {
             // 바코드를 찾지 못한 경우 무시

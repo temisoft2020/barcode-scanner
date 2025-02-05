@@ -12,10 +12,22 @@
             padding: 20px;
             text-align: center;
         }
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto 20px;
+        }
         #video {
             width: 100%;
             max-width: 640px;
-            margin-bottom: 20px;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
         #result {
             margin-top: 20px;
@@ -39,7 +51,10 @@
 </head>
 <body>
     <h1>바코드 스캐너</h1>
-    <video id="video" autoplay playsinline></video>
+    <div class="video-container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+    </div>
     <div id="result">
         <h2>스캔된 바코드</h2>
         <ul class="barcode-list" id="barcodeList"></ul>
