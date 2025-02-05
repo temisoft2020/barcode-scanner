@@ -71,9 +71,7 @@ async function startCamera() {
             video.play()
                 .then(() => {
                     console.log('비디오 재생 시작');
-                    if (!isScanning) {
-                        startScanning();
-                    }
+                    startScanning();
                 })
                 .catch(error => {
                     console.error('비디오 재생 실패:', error);
@@ -91,49 +89,44 @@ function startScanning() {
     if (isScanning) return;
     isScanning = true;
 
-    let lastScanTime = 0;
-    const scanInterval = 200; // 200ms 간격
+    // 이전 디코더 정리
+    codeReader.reset();
 
-    async function scan(currentTime) {
-        if (!isScanning) return;
-
-        // 마지막 스캔으로부터 200ms가 지났는지 확인
-        if (currentTime - lastScanTime >= scanInterval) {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                try {
-                    const result = await codeReader.decodeFromVideoElement(video);
-                    if (result && !scannedBarcodes.has(result.text)) {
-                        // 새로운 바코드인 경우에만 추가
-                        scannedBarcodes.add(result.text);
-                        
-                        // UI에 바코드 추가
-                        const li = document.createElement('li');
-                        li.className = 'barcode-item';
-                        li.textContent = `${result.text}`;
-                        barcodeList.insertBefore(li, barcodeList.firstChild);
-
-                        // 바코드 영역 표시
-                        if (result.resultPoints) {
-                            drawBarcodeBox(result);
-                        }
-                    }
-                } catch (err) {
-                    // 바코드를 찾지 못한 경우 무시
-                }
-            }
-            lastScanTime = currentTime;
-        }
-
-        // 다음 프레임 요청
-        requestAnimationFrame(scan);
-    }
+    // 디코더 설정
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E
+    ]);
 
     // 스캔 시작
-    requestAnimationFrame(scan);
+    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+        if (result && !scannedBarcodes.has(result.text)) {
+            // 새로운 바코드인 경우에만 추가
+            console.log('바코드 인식:', result.text);
+            scannedBarcodes.add(result.text);
+            
+            // UI에 바코드 추가
+            const li = document.createElement('li');
+            li.className = 'barcode-item';
+            li.textContent = `${result.text}`;
+            barcodeList.insertBefore(li, barcodeList.firstChild);
+
+            // 바코드 영역 표시
+            if (result.resultPoints) {
+                drawBarcodeBox(result);
+            }
+        }
+    });
 
     // 페이지를 나갈 때 정리
     window.addEventListener('beforeunload', () => {
         isScanning = false;
+        codeReader.reset();
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
         }
