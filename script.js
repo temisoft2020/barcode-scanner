@@ -49,24 +49,25 @@ async function startCamera() {
             video: { 
                 facingMode: 'environment',
                 width: { ideal: 1280 },
-                height: { ideal: 720 }
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
             }
         };
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
         
         // 비디오 메타데이터 로드 시 캔버스 크기 설정
-        video.addEventListener('loadedmetadata', updateCanvasSize);
+        video.addEventListener('loadedmetadata', () => {
+            updateCanvasSize();
+            video.play().catch(console.error);
+        });
         
         // 비디오가 실제로 재생되기 시작할 때 스캔 시작
-        video.addEventListener('play', () => {
+        video.addEventListener('playing', () => {
             if (!isScanning) {
                 startScanning();
             }
         });
-
-        // 비디오 재생 시작
-        await video.play();
         
     } catch (err) {
         console.error('카메라 접근 오류:', err);
@@ -80,7 +81,7 @@ function startScanning() {
     isScanning = true;
 
     const scanInterval = setInterval(async () => {
-        if (!video.paused && !video.ended) {
+        if (!video.paused && !video.ended && video.readyState === 4) {
             try {
                 const result = await codeReader.decodeFromVideoElement(video);
                 if (result && !scannedBarcodes.has(result.text)) {
