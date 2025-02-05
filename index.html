@@ -39,31 +39,53 @@
             height: 100%;
             pointer-events: none;
         }
+        .button-container {
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            text-align: center;
+        }
         #scanButton {
+            display: inline-block;
             background-color: #4CAF50;
             color: white;
             border: none;
             padding: 15px 30px;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: bold;
             border-radius: 5px;
             cursor: pointer;
             margin: 10px 0;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            min-width: 200px;
         }
         #scanButton:hover {
             background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         #scanButton:active {
             background-color: #3d8b40;
+            transform: translateY(0);
+        }
+        #scanButton:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         #result {
             margin-top: 20px;
-            padding: 10px;
+            padding: 15px;
             border: 1px solid #ccc;
             border-radius: 8px;
             min-height: 50px;
             background-color: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 640px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .barcode-list {
             list-style: none;
@@ -71,10 +93,15 @@
             margin: 0;
         }
         .barcode-item {
-            padding: 10px;
-            margin: 5px 0;
+            padding: 12px;
+            margin: 8px 0;
             background-color: #f0f0f0;
-            border-radius: 3px;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        .barcode-item:hover {
+            background-color: #e8e8e8;
         }
     </style>
 </head>
@@ -84,7 +111,9 @@
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
     </div>
-    <button id="scanButton">바코드 스캔</button>
+    <div class="button-container">
+        <button id="scanButton">바코드 스캔</button>
+    </div>
     <div id="result">
         <h2>스캔된 바코드</h2>
         <ul class="barcode-list" id="barcodeList"></ul>
