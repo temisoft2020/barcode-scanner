@@ -72,7 +72,7 @@ async function startCamera() {
                 .then(() => {
                     console.log('비디오 재생 시작');
                     if (!isScanning) {
-                        startScanning();
+                        //startScanning();
                     }
                 })
                 .catch(error => {
