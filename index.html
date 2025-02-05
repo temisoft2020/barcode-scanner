@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바코드 스캐너</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #video {
+            width: 100%;
+            max-width: 640px;
+            margin-bottom: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            min-height: 50px;
+        }
+        .barcode-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .barcode-item {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f0f0f0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>바코드 스캐너</h1>
+    <video id="video" autoplay playsinline></video>
+    <div id="result">
+        <h2>스캔된 바코드</h2>
+        <ul class="barcode-list" id="barcodeList"></ul>
+    </div>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
