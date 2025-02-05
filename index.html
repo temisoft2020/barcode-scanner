@@ -11,12 +11,17 @@
             margin: 0 auto;
             padding: 20px;
             text-align: center;
+            background-color: #f5f5f5;
         }
         .video-container {
             position: relative;
             width: 100%;
             max-width: 640px;
             margin: 0 auto 20px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         #video {
             width: 100%;
@@ -24,6 +29,7 @@
             height: auto;
             display: block;
             background-color: #000;
+            transform: scaleX(1);
         }
         #canvas {
             position: absolute;
@@ -37,8 +43,10 @@
             margin-top: 20px;
             padding: 10px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 8px;
             min-height: 50px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .barcode-list {
             list-style: none;
@@ -56,7 +64,7 @@
 <body>
     <h1>바코드 스캐너</h1>
     <div class="video-container">
-        <video id="video" autoplay playsinline muted loop playsInline webkit-playsinline></video>
+        <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
     </div>
     <div id="result">

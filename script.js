@@ -12,8 +12,10 @@ let isScanning = false;
 
 // 캔버스 크기 설정
 function updateCanvasSize() {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    if (video.videoWidth && video.videoHeight) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+    }
 }
 
 // 바코드 영역 표시
@@ -45,30 +47,39 @@ function drawBarcodeBox(location) {
 // 카메라 시작
 async function startCamera() {
     try {
+        // 이전 스트림이 있다면 정리
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
+
+        // 모바일에서는 후면 카메라, 데스크톱에서는 기본 카메라 사용
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const constraints = {
-            video: { 
-                facingMode: 'environment',
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                frameRate: { ideal: 30 }
+            video: {
+                facingMode: isMobile ? 'environment' : 'user',
+                width: { min: 640, ideal: 1280, max: 1920 },
+                height: { min: 480, ideal: 720, max: 1080 }
             }
         };
+
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
-        
-        // 비디오 메타데이터 로드 시 캔버스 크기 설정
-        video.addEventListener('loadedmetadata', () => {
+
+        // 비디오 이벤트 리스너 설정
+        video.onloadedmetadata = () => {
             updateCanvasSize();
-            video.play().catch(console.error);
-        });
-        
-        // 비디오가 실제로 재생되기 시작할 때 스캔 시작
-        video.addEventListener('playing', () => {
-            if (!isScanning) {
-                startScanning();
-            }
-        });
-        
+            video.play()
+                .then(() => {
+                    console.log('비디오 재생 시작');
+                    if (!isScanning) {
+                        startScanning();
+                    }
+                })
+                .catch(error => {
+                    console.error('비디오 재생 실패:', error);
+                });
+        };
+
     } catch (err) {
         console.error('카메라 접근 오류:', err);
         alert('카메라 접근에 실패했습니다. 카메라 권한을 확인해주세요.');
@@ -81,7 +92,7 @@ function startScanning() {
     isScanning = true;
 
     const scanInterval = setInterval(async () => {
-        if (!video.paused && !video.ended && video.readyState === 4) {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
             try {
                 const result = await codeReader.decodeFromVideoElement(video);
                 if (result && !scannedBarcodes.has(result.text)) {
@@ -103,7 +114,7 @@ function startScanning() {
                 // 바코드를 찾지 못한 경우 무시
             }
         }
-    }, 200); // 0.2초마다 스캔
+    }, 200);
 
     // 페이지를 나갈 때 정리
     window.addEventListener('beforeunload', () => {
@@ -116,4 +127,4 @@ function startScanning() {
 }
 
 // 페이지 로드 시 카메라 시작
-window.addEventListener('load', startCamera); 
+window.addEventListener('DOMContentLoaded', startCamera); 
