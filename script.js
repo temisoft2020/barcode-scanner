@@ -59,33 +59,26 @@ async function startCamera() {
                 facingMode: isMobile ? 'environment' : 'user',
                 width: { min: 640, ideal: 1280, max: 1920 },
                 height: { min: 480, ideal: 720, max: 1080 },
-                // 자동 초점 설정 추가
-                focusMode: 'continuous',
-                // 고급 카메라 설정
-                advanced: [{
-                    focusMode: 'continuous',
-                    autoFocus: true
-                }]
+                autoFocus: true,
+                focusMode: 'continuous'
             }
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
 
-        // 스트림의 설정을 확인하고 자동 초점 활성화
+        // 자동 초점 설정 시도
         const [videoTrack] = stream.getVideoTracks();
         if (videoTrack) {
-            const capabilities = videoTrack.getCapabilities();
-            const settings = videoTrack.getSettings();
-
-            // 자동 초점 지원 여부 확인 및 설정
-            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+            try {
                 await videoTrack.applyConstraints({
-                    focusMode: 'continuous'
+                    advanced: [{
+                        autoFocus: true
+                    }]
                 });
-                console.log('자동 초점 활성화됨');
-            } else {
-                console.log('이 카메라는 자동 초점을 지원하지 않습니다');
+                console.log('자동 초점 설정 완료');
+            } catch (focusErr) {
+                console.log('자동 초점 설정 실패:', focusErr);
             }
         }
 
