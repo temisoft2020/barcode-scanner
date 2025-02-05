@@ -1,6 +1,7 @@
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const barcodeList = document.getElementById('barcodeList');
+const scanButton = document.getElementById('scanButton');
 const ctx = canvas.getContext('2d');
 
 // 스캔된 바코드를 저장할 Set
@@ -8,7 +9,6 @@ const scannedBarcodes = new Set();
 
 // ZXing 바코드 리더 초기화
 const codeReader = new ZXing.BrowserMultiFormatReader();
-let isScanning = false;
 
 // 캔버스 크기 설정
 function updateCanvasSize() {
@@ -71,40 +71,36 @@ async function startCamera() {
             video.play()
                 .then(() => {
                     console.log('비디오 재생 시작');
-                    startScanning();
+                    scanButton.disabled = false;
                 })
                 .catch(error => {
                     console.error('비디오 재생 실패:', error);
+                    scanButton.disabled = true;
                 });
         };
 
     } catch (err) {
         console.error('카메라 접근 오류:', err);
         alert('카메라 접근에 실패했습니다. 카메라 권한을 확인해주세요.');
+        scanButton.disabled = true;
     }
 }
 
-// 바코드 스캔 시작
-function startScanning() {
-    if (isScanning) return;
-    isScanning = true;
+// 바코드 스캔 실행
+async function scanBarcode() {
+    if (!video.srcObject) {
+        alert('카메라가 활성화되지 않았습니다.');
+        return;
+    }
 
-    // 이전 디코더 정리
-    codeReader.reset();
+    try {
+        // 스캔 버튼 비활성화
+        scanButton.disabled = true;
+        scanButton.textContent = '스캔 중...';
 
-    // 디코더 설정
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-        ZXing.BarcodeFormat.EAN_13,
-        ZXing.BarcodeFormat.EAN_8,
-        ZXing.BarcodeFormat.CODE_128,
-        ZXing.BarcodeFormat.CODE_39,
-        ZXing.BarcodeFormat.UPC_A,
-        ZXing.BarcodeFormat.UPC_E
-    ]);
-
-    // 스캔 시작
-    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+        // 바코드 스캔
+        const result = await codeReader.decodeFromVideoElement(video);
+        
         if (result && !scannedBarcodes.has(result.text)) {
             // 새로운 바코드인 경우에만 추가
             console.log('바코드 인식:', result.text);
@@ -121,17 +117,27 @@ function startScanning() {
                 drawBarcodeBox(result);
             }
         }
-    });
-
-    // 페이지를 나갈 때 정리
-    window.addEventListener('beforeunload', () => {
-        isScanning = false;
-        codeReader.reset();
-        if (video.srcObject) {
-            video.srcObject.getTracks().forEach(track => track.stop());
-        }
-    });
+    } catch (err) {
+        console.log('바코드를 찾을 수 없습니다.');
+    } finally {
+        // 스캔 버튼 다시 활성화
+        scanButton.disabled = false;
+        scanButton.textContent = '바코드 스캔';
+    }
 }
 
+// 이벤트 리스너 설정
+scanButton.addEventListener('click', scanBarcode);
+
+// 페이지를 나갈 때 정리
+window.addEventListener('beforeunload', () => {
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+    }
+});
+
 // 페이지 로드 시 카메라 시작
-window.addEventListener('DOMContentLoaded', startCamera); 
+window.addEventListener('DOMContentLoaded', () => {
+    scanButton.disabled = true;  // 초기에는 버튼 비활성화
+    startCamera();
+}); 

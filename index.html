@@ -39,6 +39,23 @@
             height: 100%;
             pointer-events: none;
         }
+        #scanButton {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: background-color 0.3s;
+        }
+        #scanButton:hover {
+            background-color: #45a049;
+        }
+        #scanButton:active {
+            background-color: #3d8b40;
+        }
         #result {
             margin-top: 20px;
             padding: 10px;
@@ -67,6 +84,7 @@
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
     </div>
+    <button id="scanButton">바코드 스캔</button>
     <div id="result">
         <h2>스캔된 바코드</h2>
         <ul class="barcode-list" id="barcodeList"></ul>
