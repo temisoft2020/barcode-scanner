@@ -50,6 +50,7 @@ async function startCamera() {
         // 이전 스트림이 있다면 정리
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
         }
 
         // 모바일에서는 후면 카메라, 데스크톱에서는 기본 카메라 사용
@@ -85,15 +86,21 @@ async function startCamera() {
         // 비디오 이벤트 리스너 설정
         video.onloadedmetadata = () => {
             updateCanvasSize();
-            video.play()
-                .then(() => {
-                    console.log('비디오 재생 시작');
-                    scanButton.disabled = false;
-                })
-                .catch(error => {
-                    console.error('비디오 재생 실패:', error);
-                    scanButton.disabled = true;
-                });
+            // 비디오가 재생 중이 아닐 때만 재생 시도
+            if (video.paused) {
+                video.play()
+                    .then(() => {
+                        console.log('비디오 재생 시작');
+                        scanButton.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error('비디오 재생 실패:', error);
+                        scanButton.disabled = true;
+                    });
+            } else {
+                console.log('비디오가 이미 재생 중입니다');
+                scanButton.disabled = false;
+            }
         };
 
     } catch (err) {
