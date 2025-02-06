@@ -103,6 +103,31 @@
         .barcode-item:hover {
             background-color: #e8e8e8;
         }
+        #logContainer {
+            margin-top: 20px;
+            max-width: 640px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #logArea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            background-color: #f8f8f8;
+            resize: vertical;
+            margin-top: 10px;
+        }
+        .log-title {
+            text-align: left;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -117,6 +142,10 @@
     <div id="result">
         <h2>스캔된 바코드</h2>
         <ul class="barcode-list" id="barcodeList"></ul>
+    </div>
+    <div id="logContainer">
+        <div class="log-title">로그</div>
+        <textarea id="logArea" readonly></textarea>
     </div>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script src="script.js"></script>
