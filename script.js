@@ -115,8 +115,26 @@ async function scanBarcode() {
         scanButton.disabled = true;
         scanButton.textContent = '스캔 중...';
 
-        // 바코드 스캔
-        const result = await codeReader.decodeFromVideoElement(video);
+        // 현재 비디오 프레임을 캔버스에 캡처
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = video.videoWidth;
+        tempCanvas.height = video.videoHeight;
+        
+        // 비디오의 중앙 부분만 캡처 (전체 크기의 60%)
+        const captureWidth = video.videoWidth * 0.6;
+        const captureHeight = video.videoHeight * 0.6;
+        const startX = (video.videoWidth - captureWidth) / 2;
+        const startY = (video.videoHeight - captureHeight) / 2;
+        
+        tempCtx.drawImage(video, 
+            startX, startY, captureWidth, captureHeight,  // 소스 영역
+            0, 0, tempCanvas.width, tempCanvas.height     // 대상 영역
+        );
+
+        // 캡처된 이미지에서 바코드 스캔
+        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const result = await codeReader.decodeFromImage(undefined, imageData);
         
         if (result && !scannedBarcodes.has(result.text)) {
             // 새로운 바코드인 경우에만 추가
@@ -129,9 +147,13 @@ async function scanBarcode() {
             li.textContent = `${result.text}`;
             barcodeList.insertBefore(li, barcodeList.firstChild);
 
-            // 바코드 영역 표시
+            // 바코드 영역 표시 (좌표 조정 필요)
             if (result.resultPoints) {
-                drawBarcodeBox(result);
+                const adjustedPoints = result.resultPoints.map(point => ({
+                    x: point.x + startX,
+                    y: point.y + startY
+                }));
+                drawBarcodeBox({ resultPoints: adjustedPoints });
             }
         }
     } catch (err) {
