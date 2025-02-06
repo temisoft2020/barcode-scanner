@@ -115,49 +115,41 @@ async function scanBarcode() {
         scanButton.disabled = true;
         scanButton.textContent = '스캔 중...';
 
-        // 현재 비디오 프레임을 캔버스에 캡처
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = video.videoWidth;
-        tempCanvas.height = video.videoHeight;
-        
-        // 비디오의 중앙 부분만 캡처 (전체 크기의 60%)
-        const captureWidth = video.videoWidth * 0.6;
-        const captureHeight = video.videoHeight * 0.6;
-        const startX = (video.videoWidth - captureWidth) / 2;
-        const startY = (video.videoHeight - captureHeight) / 2;
-        
-        tempCtx.drawImage(video, 
-            startX, startY, captureWidth, captureHeight,  // 소스 영역
-            0, 0, tempCanvas.width, tempCanvas.height     // 대상 영역
-        );
+        // 여러 번 스캔 시도 (최대 3번)
+        for (let i = 0; i < 3; i++) {
+            try {
+                const result = await codeReader.decodeFromVideoElement(video);
+                
+                if (result && !scannedBarcodes.has(result.text)) {
+                    // 새로운 바코드인 경우에만 추가
+                    console.log('바코드 인식:', result.text);
+                    scannedBarcodes.add(result.text);
+                    
+                    // UI에 바코드 추가
+                    const li = document.createElement('li');
+                    li.className = 'barcode-item';
+                    li.textContent = `${result.text}`;
+                    barcodeList.insertBefore(li, barcodeList.firstChild);
 
-        // 캡처된 이미지에서 바코드 스캔
-        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-        const result = await codeReader.decodeFromImage(undefined, imageData);
-        
-        if (result && !scannedBarcodes.has(result.text)) {
-            // 새로운 바코드인 경우에만 추가
-            console.log('바코드 인식:', result.text);
-            scannedBarcodes.add(result.text);
-            
-            // UI에 바코드 추가
-            const li = document.createElement('li');
-            li.className = 'barcode-item';
-            li.textContent = `${result.text}`;
-            barcodeList.insertBefore(li, barcodeList.firstChild);
-
-            // 바코드 영역 표시 (좌표 조정 필요)
-            if (result.resultPoints) {
-                const adjustedPoints = result.resultPoints.map(point => ({
-                    x: point.x + startX,
-                    y: point.y + startY
-                }));
-                drawBarcodeBox({ resultPoints: adjustedPoints });
+                    // 바코드 영역 표시
+                    if (result.resultPoints) {
+                        drawBarcodeBox(result);
+                    }
+                    
+                    // 성공적으로 스캔했으면 반복 중단
+                    return;
+                }
+            } catch (err) {
+                // 개별 스캔 시도 실패는 무시하고 계속 진행
+                await new Promise(resolve => setTimeout(resolve, 100)); // 100ms 대기
             }
         }
-    } catch (err) {
+        
+        // 3번의 시도 모두 실패한 경우
         console.log('바코드를 찾을 수 없습니다.');
+        
+    } catch (err) {
+        console.log('스캔 중 오류 발생:', err);
     } finally {
         // 스캔 버튼 다시 활성화
         scanButton.disabled = false;
