@@ -3,6 +3,7 @@ const canvas = document.getElementById('canvas');
 const barcodeList = document.getElementById('barcodeList');
 const scanButton = document.getElementById('scanButton');
 const logArea = document.getElementById('logArea');
+const debugInfo = document.getElementById('debugInfo');
 const ctx = canvas.getContext('2d');
 
 // 스캔된 바코드를 저장할 Set
@@ -12,60 +13,82 @@ const scannedBarcodes = new Set();
 const codeReader = new ZXing.BrowserMultiFormatReader();
 let isScanning = false;
 
+// 디버그 정보 업데이트
+function updateDebugInfo() {
+    const info = [
+        `User Agent: ${navigator.userAgent}`,
+        `Screen: ${window.innerWidth}x${window.innerHeight}`,
+        `Is Mobile: ${/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)}`,
+        `Video Size: ${video.videoWidth}x${video.videoHeight}`,
+        `Scanned Codes: ${scannedBarcodes.size}`
+    ].join('\n');
+    debugInfo.textContent = info;
+}
+
 // 로그 출력 함수
 function log(message) {
-    const timestamp = new Date().toLocaleTimeString();
-    const logMessage = `[${timestamp}] ${message}\n`;
-    logArea.value += logMessage;
-    logArea.scrollTop = logArea.scrollHeight; // 자동 스크롤
+    try {
+        const timestamp = new Date().toLocaleTimeString();
+        const logMessage = `[${timestamp}] ${message}\n`;
+        logArea.value += logMessage;
+        logArea.scrollTop = logArea.scrollHeight; // 자동 스크롤
+        updateDebugInfo();
+    } catch (err) {
+        console.error('로그 출력 오류:', err);
+    }
 }
 
 // 캔버스 크기 설정
 function updateCanvasSize() {
-    if (video.videoWidth && video.videoHeight) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        log(`캔버스 크기 설정: ${canvas.width}x${canvas.height}`);
+    try {
+        if (video.videoWidth && video.videoHeight) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            log(`캔버스 크기 설정: ${canvas.width}x${canvas.height}`);
+            updateDebugInfo();
+        }
+    } catch (err) {
+        console.error('캔버스 크기 설정 오류:', err);
+        log(`캔버스 오류: ${err.message}`);
     }
 }
 
 // 바코드 영역 표시
 function drawBarcodeBox(location) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#00FF00';
-    ctx.lineWidth = 3;
-
-    // 바코드 위치 좌표
-    const points = location.resultPoints;
-    
-    // 바운딩 박스 계산
-    const minX = Math.min(...points.map(p => p.x));
-    const minY = Math.min(...points.map(p => p.y));
-    const maxX = Math.max(...points.map(p => p.x));
-    const maxY = Math.max(...points.map(p => p.y));
-    
-    // 박스 그리기
-    ctx.beginPath();
-    ctx.rect(minX, minY, maxX - minX, maxY - minY);
-    ctx.stroke();
-
-    // 3초 후 박스 지우기
-    setTimeout(() => {
+    try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }, 3000);
+        ctx.strokeStyle = '#00FF00';
+        ctx.lineWidth = 3;
+
+        const points = location.resultPoints;
+        
+        const minX = Math.min(...points.map(p => p.x));
+        const minY = Math.min(...points.map(p => p.y));
+        const maxX = Math.max(...points.map(p => p.x));
+        const maxY = Math.max(...points.map(p => p.y));
+        
+        ctx.beginPath();
+        ctx.rect(minX, minY, maxX - minX, maxY - minY);
+        ctx.stroke();
+
+        setTimeout(() => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }, 3000);
+    } catch (err) {
+        console.error('바코드 박스 그리기 오류:', err);
+        log(`그리기 오류: ${err.message}`);
+    }
 }
 
 // 카메라 시작 및 바코드 스캔 설정
 async function startCamera() {
     try {
-        // 이전 스캔 중지
         if (isScanning) {
             await codeReader.reset();
             isScanning = false;
             log('이전 스캔 중지');
         }
 
-        // 모바일에서는 후면 카메라, 데스크톱에서는 기본 카메라 사용
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const constraints = {
             video: {
@@ -76,32 +99,27 @@ async function startCamera() {
         };
 
         log('카메라 초기화 중...');
+        log(`디바이스 정보: ${isMobile ? '모바일' : '데스크톱'}`);
 
-        // ZXing을 통한 비디오 스트림 설정 및 스캔
         await codeReader.decodeFromConstraints(
             constraints,
             video,
             (result, error) => {
                 if (result && !scannedBarcodes.has(result.text)) {
-                    // 새로운 바코드인 경우에만 추가
                     log(`새로운 바코드 인식: ${result.text}`);
                     scannedBarcodes.add(result.text);
                     
-                    // UI에 바코드 추가
                     const li = document.createElement('li');
                     li.className = 'barcode-item';
                     li.textContent = `${result.text}`;
                     barcodeList.insertBefore(li, barcodeList.firstChild);
 
-                    // 바코드 영역 표시
                     if (result.resultPoints) {
                         drawBarcodeBox(result);
                     }
-                } else if (error) {
-                    // 스캔 중 오류가 발생한 경우에만 로그 출력
-                    if (error.message !== 'No MultiFormat Readers were able to detect the code.') {
-                        log(`스캔 오류: ${error.message}`);
-                    }
+                    updateDebugInfo();
+                } else if (error && error.message !== 'No MultiFormat Readers were able to detect the code.') {
+                    log(`스캔 오류: ${error.message}`);
                 }
             }
         );
@@ -109,28 +127,34 @@ async function startCamera() {
         isScanning = true;
         scanButton.disabled = false;
         log('카메라 스캔 시작');
+        updateDebugInfo();
 
     } catch (err) {
         console.error('카메라 접근 오류:', err);
         log(`카메라 오류: ${err.message}`);
         alert('카메라 접근에 실패했습니다. 카메라 권한을 확인해주세요.');
         scanButton.disabled = true;
+        updateDebugInfo();
     }
 }
 
 // 스캔 시작/중지 토글
 async function toggleScanning() {
-    if (isScanning) {
-        // 스캔 중지
-        await codeReader.reset();
-        isScanning = false;
-        scanButton.textContent = '스캔 시작';
-        log('스캔 중지');
-    } else {
-        // 스캔 시작
-        scanButton.textContent = '스캔 중지';
-        log('스캔 시작');
-        startCamera();
+    try {
+        if (isScanning) {
+            await codeReader.reset();
+            isScanning = false;
+            scanButton.textContent = '스캔 시작';
+            log('스캔 중지');
+        } else {
+            scanButton.textContent = '스캔 중지';
+            log('스캔 시작');
+            startCamera();
+        }
+        updateDebugInfo();
+    } catch (err) {
+        console.error('스캔 토글 오류:', err);
+        log(`토글 오류: ${err.message}`);
     }
 }
 
@@ -147,8 +171,15 @@ window.addEventListener('beforeunload', () => {
 
 // 페이지 로드 시 초기화
 window.addEventListener('DOMContentLoaded', () => {
-    scanButton.disabled = true;  // 초기에는 버튼 비활성화
-    scanButton.textContent = '스캔 시작';
-    log('바코드 스캐너 초기화');
-    startCamera();
+    try {
+        scanButton.disabled = true;
+        scanButton.textContent = '스캔 시작';
+        log('바코드 스캐너 초기화');
+        log(`브라우저: ${navigator.userAgent}`);
+        startCamera();
+        updateDebugInfo();
+    } catch (err) {
+        console.error('초기화 오류:', err);
+        log(`초기화 오류: ${err.message}`);
+    }
 }); 

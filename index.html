@@ -2,22 +2,35 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>바코드 스캐너</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 10px;
             text-align: center;
             background-color: #f5f5f5;
+        }
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            h1 {
+                font-size: 24px;
+                margin: 10px 0;
+            }
+            h2 {
+                font-size: 20px;
+                margin: 8px 0;
+            }
         }
         .video-container {
             position: relative;
             width: 100%;
             max-width: 640px;
-            margin: 0 auto 20px;
+            margin: 0 auto 10px;
             background-color: #000;
             border-radius: 8px;
             overflow: hidden;
@@ -42,7 +55,7 @@
         .button-container {
             width: 100%;
             max-width: 640px;
-            margin: 20px auto;
+            margin: 10px auto;
             text-align: center;
         }
         #scanButton {
@@ -59,6 +72,7 @@
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             min-width: 200px;
+            -webkit-tap-highlight-color: transparent;
         }
         #scanButton:hover {
             background-color: #45a049;
@@ -76,8 +90,8 @@
             box-shadow: none;
         }
         #result {
-            margin-top: 20px;
-            padding: 15px;
+            margin-top: 10px;
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 8px;
             min-height: 50px;
@@ -99,27 +113,33 @@
             border-radius: 4px;
             font-size: 16px;
             transition: background-color 0.2s;
+            word-break: break-all;
         }
         .barcode-item:hover {
             background-color: #e8e8e8;
         }
         #logContainer {
-            margin-top: 20px;
+            margin-top: 10px;
             max-width: 640px;
             margin-left: auto;
             margin-right: auto;
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         #logArea {
             width: 100%;
-            height: 150px;
-            padding: 10px;
+            height: 120px;
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-family: monospace;
-            font-size: 14px;
+            font-size: 12px;
             background-color: #f8f8f8;
-            resize: vertical;
-            margin-top: 10px;
+            resize: none;
+            margin-top: 5px;
+            box-sizing: border-box;
         }
         .log-title {
             text-align: left;
@@ -127,6 +147,12 @@
             font-weight: bold;
             margin-bottom: 5px;
             color: #333;
+        }
+        #debugInfo {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+            text-align: left;
         }
     </style>
 </head>
@@ -146,6 +172,7 @@
     <div id="logContainer">
         <div class="log-title">로그</div>
         <textarea id="logArea" readonly></textarea>
+        <div id="debugInfo"></div>
     </div>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script src="script.js"></script>
