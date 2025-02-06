@@ -83,6 +83,16 @@ function drawBarcodeBox(location) {
 // 카메라 시작 및 바코드 스캔 설정
 async function startCamera() {
     try {
+        // 사용 가능한 카메라 장치 목록 가져오기
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        log('=== 사용 가능한 카메라 목록 ===');
+        videoDevices.forEach((device, index) => {
+            log(`카메라 ${index + 1}: ${device.label || '이름 없음'} (${device.deviceId})`);
+        });
+        log('==========================');
+
         if (isScanning) {
             await codeReader.reset();
             isScanning = false;
