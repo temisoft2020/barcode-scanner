@@ -9,6 +9,7 @@ const scannedBarcodes = new Set();
 
 // ZXing 바코드 리더 초기화
 const codeReader = new ZXing.BrowserMultiFormatReader();
+let isScanning = false;
 
 // 캔버스 크기 설정
 function updateCanvasSize() {
@@ -44,13 +45,13 @@ function drawBarcodeBox(location) {
     }, 3000);
 }
 
-// 카메라 시작
+// 카메라 시작 및 바코드 스캔 설정
 async function startCamera() {
     try {
-        // 이전 스트림이 있다면 정리
-        if (video.srcObject) {
-            video.srcObject.getTracks().forEach(track => track.stop());
-            video.srcObject = null;
+        // 이전 스캔 중지
+        if (isScanning) {
+            await codeReader.reset();
+            isScanning = false;
         }
 
         // 모바일에서는 후면 카메라, 데스크톱에서는 기본 카메라 사용
@@ -59,74 +60,15 @@ async function startCamera() {
             video: {
                 facingMode: isMobile ? 'environment' : 'user',
                 width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 },
-                autoFocus: true,
-                focusMode: 'continuous'
+                height: { min: 480, ideal: 720, max: 1080 }
             }
         };
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-
-        // 자동 초점 설정 시도
-        const [videoTrack] = stream.getVideoTracks();
-        if (videoTrack) {
-            try {
-                await videoTrack.applyConstraints({
-                    advanced: [{
-                        autoFocus: true
-                    }]
-                });
-                console.log('자동 초점 설정 완료');
-            } catch (focusErr) {
-                console.log('자동 초점 설정 실패:', focusErr);
-            }
-        }
-
-        // 비디오 이벤트 리스너 설정
-        video.onloadedmetadata = () => {
-            updateCanvasSize();
-            // 비디오가 재생 중이 아닐 때만 재생 시도
-            if (video.paused) {
-                video.play()
-                    .then(() => {
-                        console.log('비디오 재생 시작');
-                        scanButton.disabled = false;
-                    })
-                    .catch(error => {
-                        console.error('비디오 재생 실패:', error);
-                        scanButton.disabled = true;
-                    });
-            } else {
-                console.log('비디오가 이미 재생 중입니다');
-                scanButton.disabled = false;
-            }
-        };
-
-    } catch (err) {
-        console.error('카메라 접근 오류:', err);
-        alert('카메라 접근에 실패했습니다. 카메라 권한을 확인해주세요.');
-        scanButton.disabled = true;
-    }
-}
-
-// 바코드 스캔 실행
-async function scanBarcode() {
-    if (!video.srcObject) {
-        alert('카메라가 활성화되지 않았습니다.');
-        return;
-    }
-
-    try {
-        // 스캔 버튼 비활성화
-        scanButton.disabled = true;
-        scanButton.textContent = '스캔 중...';
-
-        // 여러 번 스캔 시도 (최대 3번)
-        for (let i = 0; i < 3; i++) {
-            try {
-                const result = await codeReader.decodeFromVideoElement(video);
-                
+        // ZXing을 통한 비디오 스트림 설정 및 스캔
+        await codeReader.decodeFromConstraints(
+            constraints,
+            video,
+            (result, error) => {
                 if (result && !scannedBarcodes.has(result.text)) {
                     // 새로운 바코드인 경우에만 추가
                     console.log('바코드 인식:', result.text);
@@ -142,40 +84,48 @@ async function scanBarcode() {
                     if (result.resultPoints) {
                         drawBarcodeBox(result);
                     }
-                    
-                    // 성공적으로 스캔했으면 반복 중단
-                    return;
                 }
-            } catch (err) {
-                // 개별 스캔 시도 실패는 무시하고 계속 진행
-                await new Promise(resolve => setTimeout(resolve, 100)); // 100ms 대기
             }
-        }
-        
-        // 3번의 시도 모두 실패한 경우
-        console.log('바코드를 찾을 수 없습니다.');
-        
-    } catch (err) {
-        console.log('스캔 중 오류 발생:', err);
-    } finally {
-        // 스캔 버튼 다시 활성화
+        );
+
+        isScanning = true;
         scanButton.disabled = false;
-        scanButton.textContent = '바코드 스캔';
+        console.log('카메라 스캔 시작');
+
+    } catch (err) {
+        console.error('카메라 접근 오류:', err);
+        alert('카메라 접근에 실패했습니다. 카메라 권한을 확인해주세요.');
+        scanButton.disabled = true;
+    }
+}
+
+// 스캔 시작/중지 토글
+async function toggleScanning() {
+    if (isScanning) {
+        // 스캔 중지
+        await codeReader.reset();
+        isScanning = false;
+        scanButton.textContent = '스캔 시작';
+    } else {
+        // 스캔 시작
+        scanButton.textContent = '스캔 중지';
+        startCamera();
     }
 }
 
 // 이벤트 리스너 설정
-scanButton.addEventListener('click', scanBarcode);
+scanButton.addEventListener('click', toggleScanning);
 
 // 페이지를 나갈 때 정리
 window.addEventListener('beforeunload', () => {
-    if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
+    if (isScanning) {
+        codeReader.reset();
     }
 });
 
-// 페이지 로드 시 카메라 시작
+// 페이지 로드 시 초기화
 window.addEventListener('DOMContentLoaded', () => {
     scanButton.disabled = true;  // 초기에는 버튼 비활성화
+    scanButton.textContent = '스캔 시작';
     startCamera();
 }); 
