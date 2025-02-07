@@ -173,6 +173,16 @@ async function startCamera(deviceId = null) {
             log('이전 스캔 중지');
         }
 
+        // 먼저 카메라 권한 확인
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            stream.getTracks().forEach(track => track.stop()); // 임시 스트림 중지
+            log('카메라 권한 확인 완료');
+        } catch (err) {
+            log('카메라 권한 없음, 권한을 요청합니다.');
+            throw new Error('카메라 권한이 필요합니다.');
+        }
+
         const videoDevices = await updateCameraList();
         
         log('=== 사용 가능한 카메라 목록 ===');
@@ -181,11 +191,16 @@ async function startCamera(deviceId = null) {
         });
         log('==========================');
 
+        if (videoDevices.length === 0) {
+            throw new Error('사용 가능한 카메라가 없습니다.');
+        }
+
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const constraints = {
             video: {
                 width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 }
+                height: { min: 480, ideal: 720, max: 1080 },
+                facingMode: isMobile ? 'environment' : 'user'
             }
         };
 
@@ -193,19 +208,30 @@ async function startCamera(deviceId = null) {
         if (deviceId) {
             constraints.video.deviceId = { exact: deviceId };
             currentCamera = deviceId;
+            log(`지정된 카메라 사용: ${deviceId}`);
         } else if (isMobile && videoDevices.length > 0) {
             // 모바일에서는 첫 번째 카메라(0번)를 기본값으로 사용
             constraints.video.deviceId = { exact: videoDevices[0].deviceId };
             currentCamera = videoDevices[0].deviceId;
             log('모바일 기본 카메라(0번) 선택');
-        } else {
-            // 데스크톱이거나 카메라가 없는 경우 기본값 사용
-            constraints.video.facingMode = isMobile ? 'environment' : 'user';
         }
 
         log('카메라 초기화 중...');
         log(`디바이스 정보: ${isMobile ? '모바일' : '데스크톱'}`);
+        log(`비디오 제약 조건: ${JSON.stringify(constraints.video)}`);
 
+        // 먼저 비디오 스트림 시작
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+            await video.play();
+            log('비디오 스트림 시작 성공');
+        } catch (err) {
+            log(`비디오 스트림 시작 실패: ${err.message}`);
+            throw err;
+        }
+
+        // ZXing 디코더 시작
         await codeReader.decodeFromConstraints(
             constraints,
             video,
@@ -224,7 +250,6 @@ async function startCamera(deviceId = null) {
                     const li = document.createElement('li');
                     li.className = 'barcode-item';
                     
-                    // 이미지가 있는 경우 추가
                     if (imageUrl) {
                         const img = document.createElement('img');
                         img.src = imageUrl;
@@ -255,15 +280,17 @@ async function startCamera(deviceId = null) {
 
         isScanning = true;
         scanButton.disabled = false;
+        scanButton.textContent = '스캔 중지';
         log('카메라 스캔 시작');
         updateDebugInfo();
 
     } catch (err) {
         console.error('카메라 접근 오류:', err);
         log(`카메라 오류: ${err.message}`);
-        alert('카메라 접근에 실패했습니다. 카메라 권한을 확인해주세요.');
+        alert(`카메라 접근에 실패했습니다: ${err.message}`);
         scanButton.disabled = true;
         updateDebugInfo();
+        throw err;
     }
 }
 
@@ -341,17 +368,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         log('바코드 스캐너 초기화');
         log(`브라우저: ${navigator.userAgent}`);
         
-        // 카메라 권한 요청
         try {
-            await navigator.mediaDevices.getUserMedia({ video: true });
-            log('카메라 권한 획득 성공');
+            await startCamera();
         } catch (err) {
-            log('카메라 권한 획득 실패');
-            console.error('카메라 권한 오류:', err);
+            log(`카메라 초기화 실패: ${err.message}`);
+            alert(`카메라를 시작할 수 없습니다: ${err.message}\n카메라 권한을 확인해주세요.`);
         }
-        
-        await startCamera();
-        updateDebugInfo();
     } catch (err) {
         console.error('초기화 오류:', err);
         log(`초기화 오류: ${err.message}`);
