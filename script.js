@@ -2,6 +2,8 @@ const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const barcodeList = document.getElementById('barcodeList');
 const scanButton = document.getElementById('scanButton');
+const switchCameraButton = document.getElementById('switchCameraButton');
+const cameraSelect = document.getElementById('cameraSelect');
 const logArea = document.getElementById('logArea');
 const debugInfo = document.getElementById('debugInfo');
 const ctx = canvas.getContext('2d');
@@ -12,6 +14,7 @@ const scannedBarcodes = new Set();
 // ZXing 바코드 리더 초기화
 const codeReader = new ZXing.BrowserMultiFormatReader();
 let isScanning = false;
+let currentCamera = null;
 
 // 디버그 정보 업데이트
 function updateDebugInfo() {
@@ -80,12 +83,49 @@ function drawBarcodeBox(location) {
     }
 }
 
-// 카메라 시작 및 바코드 스캔 설정
-async function startCamera() {
+// 카메라 목록 업데이트
+async function updateCameraList() {
     try {
-        // 사용 가능한 카메라 장치 목록 가져오기
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        // 카메라 선택 옵션 초기화
+        cameraSelect.innerHTML = '<option value="">카메라 선택...</option>';
+        
+        videoDevices.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `카메라 ${index + 1}`;
+            cameraSelect.appendChild(option);
+        });
+
+        // 카메라가 2개 이상일 때만 선택 UI 표시
+        if (videoDevices.length > 1) {
+            cameraSelect.style.display = 'inline-block';
+            switchCameraButton.style.display = 'inline-block';
+        } else {
+            cameraSelect.style.display = 'none';
+            switchCameraButton.style.display = 'none';
+        }
+
+        return videoDevices;
+    } catch (err) {
+        console.error('카메라 목록 업데이트 오류:', err);
+        log(`카메라 목록 오류: ${err.message}`);
+        return [];
+    }
+}
+
+// 카메라 시작 및 바코드 스캔 설정
+async function startCamera(deviceId = null) {
+    try {
+        if (isScanning) {
+            await codeReader.reset();
+            isScanning = false;
+            log('이전 스캔 중지');
+        }
+
+        const videoDevices = await updateCameraList();
         
         log('=== 사용 가능한 카메라 목록 ===');
         videoDevices.forEach((device, index) => {
@@ -93,20 +133,22 @@ async function startCamera() {
         });
         log('==========================');
 
-        if (isScanning) {
-            await codeReader.reset();
-            isScanning = false;
-            log('이전 스캔 중지');
-        }
-
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const constraints = {
             video: {
-                facingMode: isMobile ? 'environment' : 'user',
                 width: { min: 640, ideal: 1280, max: 1920 },
                 height: { min: 480, ideal: 720, max: 1080 }
             }
         };
+
+        // deviceId가 지정된 경우 해당 카메라 사용
+        if (deviceId) {
+            constraints.video.deviceId = { exact: deviceId };
+            currentCamera = deviceId;
+        } else {
+            // 처음 실행 시 모바일이면 후면 카메라, 데스크톱이면 기본 카메라
+            constraints.video.facingMode = isMobile ? 'environment' : 'user';
+        }
 
         log('카메라 초기화 중...');
         log(`디바이스 정보: ${isMobile ? '모바일' : '데스크톱'}`);
@@ -148,6 +190,35 @@ async function startCamera() {
     }
 }
 
+// 다음 카메라로 전환
+async function switchToNextCamera() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        if (videoDevices.length <= 1) {
+            log('전환 가능한 카메라가 없습니다.');
+            return;
+        }
+
+        let nextCameraIndex = 0;
+        if (currentCamera) {
+            const currentIndex = videoDevices.findIndex(device => device.deviceId === currentCamera);
+            nextCameraIndex = (currentIndex + 1) % videoDevices.length;
+        }
+
+        const nextCamera = videoDevices[nextCameraIndex];
+        log(`카메라 전환: ${nextCamera.label || `카메라 ${nextCameraIndex + 1}`}`);
+        await startCamera(nextCamera.deviceId);
+        
+        // 선택된 카메라를 select에도 반영
+        cameraSelect.value = nextCamera.deviceId;
+    } catch (err) {
+        console.error('카메라 전환 오류:', err);
+        log(`카메라 전환 오류: ${err.message}`);
+    }
+}
+
 // 스캔 시작/중지 토글
 async function toggleScanning() {
     try {
@@ -170,6 +241,12 @@ async function toggleScanning() {
 
 // 이벤트 리스너 설정
 scanButton.addEventListener('click', toggleScanning);
+switchCameraButton.addEventListener('click', switchToNextCamera);
+cameraSelect.addEventListener('change', (e) => {
+    if (e.target.value) {
+        startCamera(e.target.value);
+    }
+});
 
 // 페이지를 나갈 때 정리
 window.addEventListener('beforeunload', () => {

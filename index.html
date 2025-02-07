@@ -154,6 +154,32 @@
             color: #666;
             text-align: left;
         }
+        .camera-controls {
+            margin-top: 10px;
+        }
+        #switchCameraButton {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        #switchCameraButton:hover {
+            background-color: #1976D2;
+            transform: translateY(-2px);
+        }
+        #cameraSelect {
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 5px;
+            min-width: 200px;
+        }
     </style>
 </head>
 <body>
@@ -164,6 +190,12 @@
     </div>
     <div class="button-container">
         <button id="scanButton">바코드 스캔</button>
+        <div class="camera-controls">
+            <button id="switchCameraButton">카메라 전환</button>
+            <select id="cameraSelect" style="display: none;">
+                <option value="">카메라 선택...</option>
+            </select>
+        </div>
     </div>
     <div id="result">
         <h2>스캔된 바코드</h2>
