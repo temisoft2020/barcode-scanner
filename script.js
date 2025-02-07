@@ -14,6 +14,7 @@ const scannedBarcodes = new Set();
 // ZXing 바코드 리더 초기화
 const hints = new Map();
 hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+hints.set(ZXing.DecodeHintType.TRY_INVERT, true);
 hints.set(ZXing.DecodeHintType.ASSUME_GS1, false);
 hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
     ZXing.BarcodeFormat.EAN_13,
