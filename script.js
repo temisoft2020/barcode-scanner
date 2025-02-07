@@ -24,9 +24,9 @@ hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
     ZXing.BarcodeFormat.UPC_E,
     ZXing.BarcodeFormat.ITF
 ]);
-// 모든 방향 스캔 활성화
-hints.set(ZXing.DecodeHintType.TRY_INVERT, true);
-hints.set(ZXing.DecodeHintType.PURE_BARCODE, false);
+// 가로 방향 스캔만 활성화
+hints.set(ZXing.DecodeHintType.TRY_INVERT, false);
+hints.set(ZXing.DecodeHintType.PURE_BARCODE, true);
 hints.set(ZXing.DecodeHintType.CHARACTER_SET, "UTF-8");
 
 const codeReader = new ZXing.BrowserMultiFormatReader(hints);
@@ -86,35 +86,19 @@ function drawBarcodeBox(location) {
 
         const points = location.resultPoints;
         
-        // 바코드 방향 계산
-        const angle = Math.atan2(
-            points[1].y - points[0].y,
-            points[1].x - points[0].x
-        ) * (180 / Math.PI);
-        
         const minX = Math.min(...points.map(p => p.x));
         const minY = Math.min(...points.map(p => p.y));
         const maxX = Math.max(...points.map(p => p.x));
         const maxY = Math.max(...points.map(p => p.y));
         
-        // 회전된 사각형 그리기
-        ctx.save();
-        ctx.translate((minX + maxX) / 2, (minY + maxY) / 2);
-        ctx.rotate(angle * Math.PI / 180);
-        ctx.strokeRect(
-            -(maxX - minX) / 2,
-            -(maxY - minY) / 2,
-            maxX - minX,
-            maxY - minY
-        );
-        ctx.restore();
+        // 단순 사각형 그리기
+        ctx.beginPath();
+        ctx.rect(minX, minY, maxX - minX, maxY - minY);
+        ctx.stroke();
 
         setTimeout(() => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }, 3000);
-        
-        // 방향 정보 로깅
-        log(`바코드 방향: ${Math.round(angle)}도`);
     } catch (err) {
         console.error('바코드 박스 그리기 오류:', err);
         log(`그리기 오류: ${err.message}`);
