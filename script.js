@@ -6,7 +6,6 @@ const switchCameraButton = document.getElementById('switchCameraButton');
 const cameraSelect = document.getElementById('cameraSelect');
 const logArea = document.getElementById('logArea');
 const debugInfo = document.getElementById('debugInfo');
-const imageList = document.getElementById('imageList');
 const ctx = canvas.getContext('2d');
 
 // 스캔된 바코드를 저장할 Set
@@ -252,48 +251,38 @@ async function startCamera(deviceId = null) {
                     log(`새로운 바코드 인식: ${result.text}`);
                     scannedBarcodes.add(result.text);
                     
-                    // 바코드 텍스트 추가
+                    let imageUrl = null;
+                    if (result.resultPoints) {
+                        drawBarcodeBox(result);
+                        imageUrl = await captureBarcode(result);
+                        log(imageUrl ? '이미지 캡처 성공' : '이미지 캡처 실패');
+                    }
+                    
                     const li = document.createElement('li');
                     li.className = 'barcode-item';
+                    
+                    // 이미지가 있는 경우 추가
+                    if (imageUrl) {
+                        const img = document.createElement('img');
+                        img.src = imageUrl;
+                        img.className = 'barcode-image';
+                        img.alt = '바코드 이미지';
+                        img.onerror = () => {
+                            log('이미지 로드 실패');
+                            img.style.display = 'none';
+                        };
+                        img.onload = () => {
+                            log('이미지 로드 성공');
+                        };
+                        li.appendChild(img);
+                    }
+                    
                     const textDiv = document.createElement('div');
                     textDiv.className = 'barcode-text';
                     textDiv.textContent = result.text;
                     li.appendChild(textDiv);
+                    
                     barcodeList.insertBefore(li, barcodeList.firstChild);
-                    
-                    // 이미지 캡처 및 표시
-                    if (result.resultPoints) {
-                        drawBarcodeBox(result);
-                        const imageUrl = await captureBarcode(result);
-                        if (imageUrl) {
-                            log('이미지 캡처 성공');
-                            const capturedItem = document.createElement('div');
-                            capturedItem.className = 'captured-item';
-                            
-                            const img = document.createElement('img');
-                            img.src = imageUrl;
-                            img.className = 'captured-image';
-                            img.alt = '바코드 이미지';
-                            img.onerror = () => {
-                                log('이미지 로드 실패');
-                                capturedItem.remove();
-                            };
-                            img.onload = () => {
-                                log('이미지 로드 성공');
-                            };
-                            
-                            const capturedText = document.createElement('div');
-                            capturedText.className = 'captured-text';
-                            capturedText.textContent = result.text;
-                            
-                            capturedItem.appendChild(img);
-                            capturedItem.appendChild(capturedText);
-                            imageList.insertBefore(capturedItem, imageList.firstChild);
-                        } else {
-                            log('이미지 캡처 실패');
-                        }
-                    }
-                    
                     updateDebugInfo();
                 } else if (error && error.message !== 'No MultiFormat Readers were able to detect the code.') {
                     log(`스캔 오류: ${error.message}`);
