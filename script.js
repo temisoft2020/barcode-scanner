@@ -200,7 +200,13 @@ async function startCamera(deviceId = null) {
             video: {
                 width: { min: 640, ideal: 1280, max: 1920 },
                 height: { min: 480, ideal: 720, max: 1080 },
-                facingMode: isMobile ? 'environment' : 'user'
+                facingMode: isMobile ? 'environment' : 'user',
+                focusMode: 'continuous', // 연속 자동 초점
+                autoFocus: true, // 자동 초점 활성화
+                advanced: [{
+                    focusMode: 'continuous',
+                    autoFocus: true
+                }]
             }
         };
 
@@ -224,6 +230,21 @@ async function startCamera(deviceId = null) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
+            
+            // 자동 초점 기능 설정
+            const videoTrack = stream.getVideoTracks()[0];
+            if (videoTrack) {
+                const capabilities = videoTrack.getCapabilities();
+                if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                    await videoTrack.applyConstraints({
+                        advanced: [{ focusMode: 'continuous' }]
+                    });
+                    log('자동 초점 설정 완료');
+                } else {
+                    log('자동 초점 기능이 지원되지 않습니다');
+                }
+            }
+            
             await video.play();
             log('비디오 스트림 시작 성공');
         } catch (err) {
