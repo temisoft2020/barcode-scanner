@@ -41,49 +41,6 @@ function log(message) {
     }
 }
 
-// ROI 영역 표시
-function drawROI() {
-    try {
-        // ROI 영역 계산 (화면 중앙 60% 영역)
-        const roiWidth = canvas.width * 0.6;
-        const roiHeight = canvas.height * 0.6;
-        const roiX = (canvas.width - roiWidth) / 2;
-        const roiY = (canvas.height - roiHeight) / 2;
-
-        // 기존 캔버스 내용 유지를 위해 clearRect 사용하지 않음
-        ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)'; // 더 선명한 녹색
-        ctx.lineWidth = 3; // 선 두께 증가
-        ctx.setLineDash([10, 10]); // 점선 패턴 조정
-        
-        // ROI 박스 그리기
-        ctx.beginPath();
-        ctx.rect(roiX, roiY, roiWidth, roiHeight);
-        ctx.stroke();
-        
-        // 선 스타일 초기화
-        ctx.setLineDash([]);
-
-        // ROI 크기 로깅
-        log(`ROI 크기: ${Math.round(roiWidth)}x${Math.round(roiHeight)}`);
-    } catch (err) {
-        console.error('ROI 표시 오류:', err);
-        log(`ROI 그리기 오류: ${err.message}`);
-    }
-}
-
-// 주기적으로 ROI 다시 그리기
-function startROIDrawing() {
-    drawROI();
-    // 60fps로 ROI 업데이트
-    requestAnimationFrame(startROIDrawing);
-}
-
-// 비디오 메타데이터 로드 시 ROI 그리기 시작
-video.addEventListener('loadedmetadata', () => {
-    updateCanvasSize();
-    startROIDrawing(); // ROI 그리기 시작
-});
-
 // 캔버스 크기 설정
 function updateCanvasSize() {
     try {
@@ -103,11 +60,8 @@ function updateCanvasSize() {
 function drawBarcodeBox(location) {
     try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 바코드 박스 그리기
-        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)'; // 바코드는 빨간색으로
+        ctx.strokeStyle = '#00FF00'; // 녹색으로 통일
         ctx.lineWidth = 3;
-        ctx.setLineDash([]); // 실선으로 변경
 
         const points = location.resultPoints;
         
@@ -120,7 +74,6 @@ function drawBarcodeBox(location) {
         ctx.rect(minX, minY, maxX - minX, maxY - minY);
         ctx.stroke();
 
-        // 3초 후에 바코드 박스만 지우기
         setTimeout(() => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }, 3000);
@@ -129,6 +82,11 @@ function drawBarcodeBox(location) {
         log(`그리기 오류: ${err.message}`);
     }
 }
+
+// 비디오 메타데이터 로드 시 캔버스 크기 설정
+video.addEventListener('loadedmetadata', () => {
+    updateCanvasSize();
+});
 
 // 바코드 영역 캡처 함수
 async function captureBarcode(location) {
@@ -349,38 +307,6 @@ async function toggleScanning() {
         updateDebugInfo();
     } catch (err) {
         console.error('스캔 토글 오류:', err);
-        log(`토글 오류: ${err.message}`);
+        log(`스캔 토글 오류: ${err.message}`);
     }
 }
-
-// 이벤트 리스너 설정
-scanButton.addEventListener('click', toggleScanning);
-switchCameraButton.addEventListener('click', switchToNextCamera);
-cameraSelect.addEventListener('change', (e) => {
-    if (e.target.value) {
-        startCamera(e.target.value);
-    }
-});
-
-// 페이지를 나갈 때 정리
-window.addEventListener('beforeunload', () => {
-    if (isScanning) {
-        codeReader.reset();
-        log('스캔 종료');
-    }
-});
-
-// 페이지 로드 시 초기화
-window.addEventListener('DOMContentLoaded', () => {
-    try {
-        scanButton.disabled = true;
-        scanButton.textContent = '스캔 시작';
-        log('바코드 스캐너 초기화');
-        log(`브라우저: ${navigator.userAgent}`);
-        startCamera();
-        updateDebugInfo();
-    } catch (err) {
-        console.error('초기화 오류:', err);
-        log(`초기화 오류: ${err.message}`);
-    }
-}); 
