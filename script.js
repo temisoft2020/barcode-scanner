@@ -25,7 +25,7 @@ hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
     ZXing.BarcodeFormat.ITF
 ]);
 // 가로 방향 스캔만 활성화
-//hints.set(ZXing.DecodeHintType.TRY_INVERT, false);
+hints.set(ZXing.DecodeHintType.TRY_INVERT, true);
 //hints.set(ZXing.DecodeHintType.PURE_BARCODE, true);
 //hints.set(ZXing.DecodeHintType.CHARACTER_SET, "UTF-8");
 
