@@ -42,6 +42,33 @@ function log(message) {
     }
 }
 
+// ROI 영역 표시
+function drawROI() {
+    try {
+        // ROI 영역 계산 (화면 중앙 60% 영역)
+        const roiWidth = canvas.width * 0.6;
+        const roiHeight = canvas.height * 0.6;
+        const roiX = (canvas.width - roiWidth) / 2;
+        const roiY = (canvas.height - roiHeight) / 2;
+
+        // 기존 캔버스 내용 유지를 위해 clearRect 사용하지 않음
+        ctx.strokeStyle = '#00FF00';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]); // 점선 스타일
+        
+        // ROI 박스 그리기
+        ctx.beginPath();
+        ctx.rect(roiX, roiY, roiWidth, roiHeight);
+        ctx.stroke();
+        
+        // 선 스타일 초기화
+        ctx.setLineDash([]);
+    } catch (err) {
+        console.error('ROI 표시 오류:', err);
+        log(`ROI 그리기 오류: ${err.message}`);
+    }
+}
+
 // 캔버스 크기 설정
 function updateCanvasSize() {
     try {
@@ -49,6 +76,7 @@ function updateCanvasSize() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             log(`캔버스 크기 설정: ${canvas.width}x${canvas.height}`);
+            drawROI(); // ROI 영역 표시
             updateDebugInfo();
         }
     } catch (err) {
@@ -61,8 +89,11 @@ function updateCanvasSize() {
 function drawBarcodeBox(location) {
     try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawROI(); // ROI 다시 그리기
+        
         ctx.strokeStyle = '#00FF00';
         ctx.lineWidth = 3;
+        ctx.setLineDash([]); // 실선으로 변경
 
         const points = location.resultPoints;
         
@@ -77,6 +108,7 @@ function drawBarcodeBox(location) {
 
         setTimeout(() => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawROI(); // ROI 다시 그리기
         }, 3000);
     } catch (err) {
         console.error('바코드 박스 그리기 오류:', err);
@@ -347,4 +379,25 @@ window.addEventListener('DOMContentLoaded', () => {
         console.error('초기화 오류:', err);
         log(`초기화 오류: ${err.message}`);
     }
+});
+
+// 캔버스 크기 설정 함수 수정
+function updateCanvasSize() {
+    try {
+        if (video.videoWidth && video.videoHeight) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            log(`캔버스 크기 설정: ${canvas.width}x${canvas.height}`);
+            drawROI(); // ROI 영역 표시
+            updateDebugInfo();
+        }
+    } catch (err) {
+        console.error('캔버스 크기 설정 오류:', err);
+        log(`캔버스 오류: ${err.message}`);
+    }
+}
+
+// 카메라 시작 시 ROI 표시를 위한 이벤트 리스너 추가
+video.addEventListener('loadedmetadata', () => {
+    updateCanvasSize();
 }); 
