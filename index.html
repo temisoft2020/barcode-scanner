@@ -114,9 +114,22 @@
             font-size: 16px;
             transition: background-color 0.2s;
             word-break: break-all;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .barcode-item:hover {
             background-color: #e8e8e8;
+        }
+        .barcode-image {
+            max-width: 150px;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .barcode-text {
+            flex: 1;
+            text-align: left;
         }
         #logContainer {
             margin-top: 10px;
