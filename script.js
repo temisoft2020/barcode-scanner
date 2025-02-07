@@ -97,23 +97,28 @@ async function captureBarcode(location) {
         // 현재 비디오 프레임을 캔버스에 그리기
         captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
         
-        // 바코드 영역 좌표 계산
+        // 바코드 영역 좌표 계산 (여백 추가)
         const points = location.resultPoints;
-        const minX = Math.max(0, Math.min(...points.map(p => p.x)) - 20);
-        const minY = Math.max(0, Math.min(...points.map(p => p.y)) - 20);
-        const maxX = Math.min(captureCanvas.width, Math.max(...points.map(p => p.x)) + 20);
-        const maxY = Math.min(captureCanvas.height, Math.max(...points.map(p => p.y)) + 20);
+        const padding = 50; // 여백을 50픽셀로 증가
+        const minX = Math.max(0, Math.min(...points.map(p => p.x)) - padding);
+        const minY = Math.max(0, Math.min(...points.map(p => p.y)) - padding);
+        const maxX = Math.min(captureCanvas.width, Math.max(...points.map(p => p.x)) + padding);
+        const maxY = Math.min(captureCanvas.height, Math.max(...points.map(p => p.y)) + padding);
         const width = maxX - minX;
         const height = maxY - minY;
         
         // 바코드 영역만 크롭
         const imageData = captureCtx.getImageData(minX, minY, width, height);
-        captureCanvas.width = width;
-        captureCanvas.height = height;
-        captureCtx.putImageData(imageData, 0, 0);
+        const croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = width;
+        croppedCanvas.height = height;
+        const croppedCtx = croppedCanvas.getContext('2d');
+        croppedCtx.putImageData(imageData, 0, 0);
         
-        // 캔버스를 이미지 URL로 변환
-        return captureCanvas.toDataURL('image/jpeg', 0.8);
+        // 캔버스를 이미지 URL로 변환 (품질 향상)
+        const imageUrl = croppedCanvas.toDataURL('image/jpeg', 0.95);
+        log('바코드 이미지 캡처 완료');
+        return imageUrl;
     } catch (err) {
         console.error('이미지 캡처 오류:', err);
         log(`캡처 오류: ${err.message}`);
@@ -201,8 +206,9 @@ async function startCamera(deviceId = null) {
                     
                     let imageUrl = null;
                     if (result.resultPoints) {
-                        imageUrl = await captureBarcode(result);
                         drawBarcodeBox(result);
+                        imageUrl = await captureBarcode(result);
+                        log(imageUrl ? '이미지 캡처 성공' : '이미지 캡처 실패');
                     }
                     
                     const li = document.createElement('li');
@@ -214,6 +220,13 @@ async function startCamera(deviceId = null) {
                         img.src = imageUrl;
                         img.className = 'barcode-image';
                         img.alt = '바코드 이미지';
+                        img.onerror = () => {
+                            log('이미지 로드 실패');
+                            img.style.display = 'none';
+                        };
+                        img.onload = () => {
+                            log('이미지 로드 성공');
+                        };
                         li.appendChild(img);
                     }
                     
