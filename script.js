@@ -178,7 +178,7 @@ function notifyBarcodeDetected() {
     
     // 진동 (지원되는 경우)
     if ('vibrate' in navigator) {
-        navigator.vibrate(200); // 200ms 동안 진동
+        navigator.vibrate(50); // 50ms 동안 진동
     }
 }
 
