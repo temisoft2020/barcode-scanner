@@ -216,10 +216,14 @@ async function startCamera(deviceId = null) {
             currentCamera = deviceId;
             log(`지정된 카메라 사용: ${deviceId}`);
         } else if (isMobile && videoDevices.length > 0) {
-            // 모바일에서는 첫 번째 카메라(0번)를 기본값으로 사용
-            constraints.video.deviceId = { exact: videoDevices[0].deviceId };
-            currentCamera = videoDevices[0].deviceId;
-            log('모바일 기본 카메라(0번) 선택');
+            // 모바일에서는 마지막 카메라를 기본값으로 사용
+            const lastCamera = videoDevices[videoDevices.length - 1];
+            constraints.video.deviceId = { exact: lastCamera.deviceId };
+            currentCamera = lastCamera.deviceId;
+            log(`모바일 기본 카메라(마지막) 선택: ${lastCamera.label || '이름 없음'}`);
+            
+            // 선택된 카메라를 select에도 반영
+            cameraSelect.value = lastCamera.deviceId;
         }
 
         log('카메라 초기화 중...');
