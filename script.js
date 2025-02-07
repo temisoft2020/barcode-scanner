@@ -193,8 +193,13 @@ async function startCamera(deviceId = null) {
         if (deviceId) {
             constraints.video.deviceId = { exact: deviceId };
             currentCamera = deviceId;
+        } else if (isMobile && videoDevices.length > 0) {
+            // 모바일에서는 첫 번째 카메라(0번)를 기본값으로 사용
+            constraints.video.deviceId = { exact: videoDevices[0].deviceId };
+            currentCamera = videoDevices[0].deviceId;
+            log('모바일 기본 카메라(0번) 선택');
         } else {
-            // 처음 실행 시 모바일이면 후면 카메라, 데스크톱이면 기본 카메라
+            // 데스크톱이거나 카메라가 없는 경우 기본값 사용
             constraints.video.facingMode = isMobile ? 'environment' : 'user';
         }
 
