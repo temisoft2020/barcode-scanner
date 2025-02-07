@@ -315,3 +315,45 @@ async function toggleScanning() {
         log(`스캔 토글 오류: ${err.message}`);
     }
 }
+
+// 이벤트 리스너 설정
+scanButton.addEventListener('click', toggleScanning);
+switchCameraButton.addEventListener('click', switchToNextCamera);
+cameraSelect.addEventListener('change', (e) => {
+    if (e.target.value) {
+        startCamera(e.target.value);
+    }
+});
+
+// 페이지를 나갈 때 정리
+window.addEventListener('beforeunload', () => {
+    if (isScanning) {
+        codeReader.reset();
+        log('스캔 종료');
+    }
+});
+
+// 페이지 로드 시 초기화
+window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        scanButton.disabled = true;
+        scanButton.textContent = '스캔 시작';
+        log('바코드 스캐너 초기화');
+        log(`브라우저: ${navigator.userAgent}`);
+        
+        // 카메라 권한 요청
+        try {
+            await navigator.mediaDevices.getUserMedia({ video: true });
+            log('카메라 권한 획득 성공');
+        } catch (err) {
+            log('카메라 권한 획득 실패');
+            console.error('카메라 권한 오류:', err);
+        }
+        
+        await startCamera();
+        updateDebugInfo();
+    } catch (err) {
+        console.error('초기화 오류:', err);
+        log(`초기화 오류: ${err.message}`);
+    }
+});
