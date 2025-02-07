@@ -14,7 +14,6 @@ const scannedBarcodes = new Set();
 // ZXing 바코드 리더 초기화
 const hints = new Map();
 hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-hints.set(ZXing.DecodeHintType.TRY_INVERT, true);
 hints.set(ZXing.DecodeHintType.ASSUME_GS1, false);
 const codeReader = new ZXing.BrowserMultiFormatReader(hints);
 codeReader.timeBetweenDecodingAttempts = 100; // 스캔 간격 설정 (ms)
