@@ -29,17 +29,21 @@
         .video-container {
             position: relative;
             width: 100%;
-            max-width: 320px;
+            max-width: 100%;
             margin: 0 auto 10px;
             background-color: #000;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding-top: 33.33%; /* 100% / 3 */
         }
         #video {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 320px;
-            height: auto;
+            height: 100%;
+            object-fit: cover;
             display: block;
             background-color: #000;
             transform: scaleX(1);
