@@ -25,9 +25,9 @@ hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
     ZXing.BarcodeFormat.ITF
 ]);
 // 가로 방향 스캔만 활성화
-hints.set(ZXing.DecodeHintType.TRY_INVERT, false);
-hints.set(ZXing.DecodeHintType.PURE_BARCODE, true);
-hints.set(ZXing.DecodeHintType.CHARACTER_SET, "UTF-8");
+//hints.set(ZXing.DecodeHintType.TRY_INVERT, false);
+//hints.set(ZXing.DecodeHintType.PURE_BARCODE, true);
+//hints.set(ZXing.DecodeHintType.CHARACTER_SET, "UTF-8");
 
 const codeReader = new ZXing.BrowserMultiFormatReader(hints);
 codeReader.timeBetweenDecodingAttempts = 200; // 스캔 간격 설정 (ms)
