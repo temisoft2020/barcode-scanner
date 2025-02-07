@@ -52,9 +52,9 @@ function drawROI() {
         const roiY = (canvas.height - roiHeight) / 2;
 
         // 기존 캔버스 내용 유지를 위해 clearRect 사용하지 않음
-        ctx.strokeStyle = '#00FF00';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]); // 점선 스타일
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)'; // 더 선명한 녹색
+        ctx.lineWidth = 3; // 선 두께 증가
+        ctx.setLineDash([10, 10]); // 점선 패턴 조정
         
         // ROI 박스 그리기
         ctx.beginPath();
@@ -63,11 +63,27 @@ function drawROI() {
         
         // 선 스타일 초기화
         ctx.setLineDash([]);
+
+        // ROI 크기 로깅
+        log(`ROI 크기: ${Math.round(roiWidth)}x${Math.round(roiHeight)}`);
     } catch (err) {
         console.error('ROI 표시 오류:', err);
         log(`ROI 그리기 오류: ${err.message}`);
     }
 }
+
+// 주기적으로 ROI 다시 그리기
+function startROIDrawing() {
+    drawROI();
+    // 60fps로 ROI 업데이트
+    requestAnimationFrame(startROIDrawing);
+}
+
+// 비디오 메타데이터 로드 시 ROI 그리기 시작
+video.addEventListener('loadedmetadata', () => {
+    updateCanvasSize();
+    startROIDrawing(); // ROI 그리기 시작
+});
 
 // 캔버스 크기 설정
 function updateCanvasSize() {
@@ -76,7 +92,6 @@ function updateCanvasSize() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             log(`캔버스 크기 설정: ${canvas.width}x${canvas.height}`);
-            drawROI(); // ROI 영역 표시
             updateDebugInfo();
         }
     } catch (err) {
@@ -89,9 +104,9 @@ function updateCanvasSize() {
 function drawBarcodeBox(location) {
     try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawROI(); // ROI 다시 그리기
         
-        ctx.strokeStyle = '#00FF00';
+        // 바코드 박스 그리기
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)'; // 바코드는 빨간색으로
         ctx.lineWidth = 3;
         ctx.setLineDash([]); // 실선으로 변경
 
@@ -106,9 +121,9 @@ function drawBarcodeBox(location) {
         ctx.rect(minX, minY, maxX - minX, maxY - minY);
         ctx.stroke();
 
+        // 3초 후에 바코드 박스만 지우기
         setTimeout(() => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawROI(); // ROI 다시 그리기
         }, 3000);
     } catch (err) {
         console.error('바코드 박스 그리기 오류:', err);
@@ -379,25 +394,4 @@ window.addEventListener('DOMContentLoaded', () => {
         console.error('초기화 오류:', err);
         log(`초기화 오류: ${err.message}`);
     }
-});
-
-// 캔버스 크기 설정 함수 수정
-function updateCanvasSize() {
-    try {
-        if (video.videoWidth && video.videoHeight) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            log(`캔버스 크기 설정: ${canvas.width}x${canvas.height}`);
-            drawROI(); // ROI 영역 표시
-            updateDebugInfo();
-        }
-    } catch (err) {
-        console.error('캔버스 크기 설정 오류:', err);
-        log(`캔버스 오류: ${err.message}`);
-    }
-}
-
-// 카메라 시작 시 ROI 표시를 위한 이벤트 리스너 추가
-video.addEventListener('loadedmetadata', () => {
-    updateCanvasSize();
 }); 
